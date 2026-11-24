@@ -7,6 +7,7 @@ FROM web AS archive
 COPY archives-site/ .
 
 FROM web AS game
+RUN apt-get update && apt-get install -y --no-install-recommends e2fsprogs && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir Pillow==12.2.0
 COPY files/*.py files/
 COPY game/ .

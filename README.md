@@ -18,6 +18,6 @@ The private source and Docker administration belong to the host operator. A play
 
 ## Build status
 
-Chapters 1 and 2 are playable. Chapter 5 and its documents are implemented behind the chapter 4 gate. Chapters 3, 4, 6 and 7 are pending.
+Chapters 1 and 2 are playable. Chapters 5 and 7, their downloads and the epilogue are implemented behind their respective gates. Chapters 3, 4 and 6 are pending. Normal play stops at chapter 3.
 
 The operator can run a spoiler-free gate check against an isolated journal with `docker compose run --rm --no-deps game python check_chapter.py 5`. Use the chapter number you want to check. This checks page access, submission and progress. It prints PASS or FAIL and leaves live progress alone.

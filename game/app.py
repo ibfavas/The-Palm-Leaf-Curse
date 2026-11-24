@@ -11,6 +11,7 @@ from pathlib import Path
 from flask import Flask, abort, g, redirect, render_template, request, send_file, url_for
 
 from files.leaves import first_page
+from files.laptop import laptop
 from files.correspondence import middle_leaves, priest_letter
 
 app = Flask(__name__)
@@ -31,7 +32,7 @@ for path in sorted((BASE / "story").glob("*.md")):
 HINTS = json.loads(Path(os.environ.get("PALM_HINTS", "/run/private/correspondence.json")).read_text())
 if not isinstance(HINTS, list) or len(HINTS) != 3 or not all(isinstance(h, str) and h.strip() for h in HINTS):
     raise RuntimeError("The private correspondence must contain three replies.")
-PLAYABLE = {1, 2, 5}
+PLAYABLE = {1, 2, 5, 7}
 workspace = tempfile.TemporaryDirectory(prefix="palm-records-")
 downloads = Path(workspace.name)
 sections = re.split(r"^### Chapter [1-7]: ", source, flags=re.M)[1:]
@@ -47,7 +48,9 @@ aftermath[2] = "As you read it, " + aftermath[2]
 cipher_key = re.search(r"letter: ([A-Z]+)\.", sections[4])[1]
 (downloads / "middle-leaves.txt").write_text(middle_leaves(quotations(5)[0] + "\n" + flags[4], cipher_key))
 priest_letter(downloads / "committee-copy.png", quotations(4)[0])
-attachments = {2: "MS-1794-047-01.png", 5: "middle-leaves.txt"}
+last_note, last_line = quotations(7)[:2]
+laptop(downloads / "RM-work.img", last_note, last_line, flags[6])
+attachments = {7: "RM-work.img", 2: "MS-1794-047-01.png", 5: "middle-leaves.txt"}
 
 
 def connect():
