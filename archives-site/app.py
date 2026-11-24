@@ -28,13 +28,25 @@ def get_ch3_flag():
     return os.environ.get("PALM_CH3_FLAG", "")
 
 
+def get_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute('ATTACH DATABASE ":memory:" AS information_schema')
+    conn.execute('CREATE TABLE IF NOT EXISTS information_schema.tables (table_name text, table_type text)')
+    conn.execute('CREATE TABLE IF NOT EXISTS information_schema.columns (table_name text, column_name text)')
+    conn.execute('DELETE FROM information_schema.tables')
+    conn.execute('DELETE FROM information_schema.columns')
+    conn.execute("INSERT INTO information_schema.tables VALUES ('catalogue', 'BASE TABLE'), ('readers', 'BASE TABLE'), ('portal_secrets', 'BASE TABLE')")
+    conn.execute("INSERT INTO information_schema.columns VALUES ('catalogue', 'id'), ('catalogue', 'title'), ('catalogue', 'material'), ('readers', 'accession_id'), ('readers', 'reader_name'), ('readers', 'status'), ('portal_secrets', 'id'), ('portal_secrets', 'secret_name'), ('portal_secrets', 'secret_value')")
+    return conn
+
+
 def init_db():
     flag = get_ch3_flag()
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     cur.execute("DROP TABLE IF EXISTS catalogue")
     cur.execute("DROP TABLE IF EXISTS readers")
-    cur.execute("DROP TABLE IF EXISTS donor_notes")
+    cur.execute("DROP TABLE IF EXISTS portal_secrets")
 
     cur.execute("""
         CREATE TABLE catalogue (
@@ -53,11 +65,10 @@ def init_db():
         )
     """)
     cur.execute("""
-        CREATE TABLE donor_notes (
-            accession_id TEXT,
-            donor TEXT,
-            note TEXT,
-            flag TEXT
+        CREATE TABLE portal_secrets (
+            id INTEGER PRIMARY KEY,
+            secret_name TEXT,
+            secret_value TEXT
         )
     """)
 
@@ -68,8 +79,7 @@ def init_db():
         "· Lakshmikutty Amma (Librarian, 2009) — Deceased (fall)\n"
         "· Prof. Raghavan Menon (Reader, 2026) — Deceased (heart attack)\n"
         "· Current reader: You (Active Session)\n\n"
-        'Admin note: "Per donor request, MS-1794-047 is not to be digitised or exhibited. Donor: Kunnathu Charitable Trust."\n\n'
-        f"Clearance reference: {flag}"
+        'Admin note: "Per donor request, MS-1794-047 is not to be digitised or exhibited. Donor: Kunnathu Charitable Trust."'
     )
 
     public_records = [
@@ -88,12 +98,7 @@ def init_db():
     ]
     cur.executemany("INSERT INTO readers VALUES (?, ?, ?, ?)", readers_data)
 
-    donor_data = [
-        ("MS-1794-047", "Kunnathu Charitable Trust",
-         "Per donor request, MS-1794-047 is not to be digitised or exhibited. Donor: Kunnathu Charitable Trust.",
-         flag)
-    ]
-    cur.executemany("INSERT INTO donor_notes VALUES (?, ?, ?, ?)", donor_data)
+    cur.execute("INSERT INTO portal_secrets VALUES (1, 'donor_covenant_flag', ?)", (flag,))
 
     conn.commit()
     conn.close()
@@ -119,7 +124,7 @@ def public():
     error = None
     records = []
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db()
     cur = conn.cursor()
     try:
         if not q:
