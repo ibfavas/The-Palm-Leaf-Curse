@@ -1,7 +1,7 @@
 FROM python:3.13-slim AS web
 WORKDIR /app
 RUN pip install --no-cache-dir Flask==3.1.3 gunicorn==23.0.0
-CMD ["gunicorn","--bind","0.0.0.0:8000","--threads","4","app:app"]
+CMD ["gunicorn","--bind","0.0.0.0:8000","--threads","4","--limit-request-line","8190","app:app"]
 
 FROM web AS archive
 COPY archives-site/ .
@@ -10,6 +10,7 @@ FROM web AS trust
 COPY trust-portal/ .
 
 FROM web AS developer
+RUN apt-get update && apt-get install -y --no-install-recommends chromium && rm -rf /var/lib/apt/lists/*
 COPY developer-site/ .
 
 FROM web AS game

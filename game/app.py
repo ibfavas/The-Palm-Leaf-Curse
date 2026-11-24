@@ -6,16 +6,17 @@ import re
 import secrets
 import sqlite3
 import tempfile
+import time
 from pathlib import Path
 
-from flask import Flask, abort, g, redirect, render_template, request, send_file, url_for
+from flask import Flask, Response, abort, g, redirect, render_template, request, send_file, url_for
 
 from files.leaves import first_page
 from files.laptop import laptop
 from files.correspondence import middle_leaves, priest_letter
 
 app = Flask(__name__)
-app.config.update(MAX_CONTENT_LENGTH=4096, TRUSTED_HOSTS=["localhost", "127.0.0.1"])
+app.config.update(MAX_CONTENT_LENGTH=65536, TRUSTED_HOSTS=["localhost", "127.0.0.1"])
 BASE = Path(__file__).resolve().parent
 STATE = Path(os.environ.get("PALM_STATE", "/var/lib/palm"))
 ACCESSION = Path(os.environ.get("PALM_ACCESSION", "/var/lib/accession"))
@@ -58,7 +59,7 @@ for path in sorted(story_dir.glob("*.md")):
 HINTS = json.loads(find_hints().read_text())
 if not isinstance(HINTS, list) or len(HINTS) != 3 or not all(isinstance(h, str) and h.strip() for h in HINTS):
     raise RuntimeError("The private correspondence must contain three replies.")
-PLAYABLE = {1, 2, 3, 4, 5, 7}
+PLAYABLE = {1, 2, 3, 4, 5, 6, 7}
 workspace = tempfile.TemporaryDirectory(prefix="palm-records-")
 downloads = Path(workspace.name)
 sections = re.split(r"^### Chapter [1-7]: ", source, flags=re.M)[1:]
@@ -72,6 +73,8 @@ aftermath = {
     2: sections[1].split("As you read it,")[1].split("**Flag:**")[0].strip(),
     3: "And there is one field you did not see before. \"Current reader.\" It has your name in it.\n\nThe archive knows you are reading.",
     4: "Three hours after the police find her, your phone lights up. Meera's number. Two words:\n\n\"stop reading.\"\n\nShe is dead. Someone has her phone.",
+    5: "The same men, the same family, the same trick. Two hundred and thirty years later, and the grandson is doing exactly what the grandfather did.",
+    6: "He has been watching you the whole time. Every chapter, every page, every login. He knew your name before you knew his.\n\nYou look at your window. The rain is still falling. The street is empty. The car with its lights off is gone.",
 }
 aftermath[1] = "Then you see the login log. " + aftermath[1]
 aftermath[2] = "As you read it, " + aftermath[2]
@@ -112,11 +115,47 @@ with connect() as setup:
 (ACCESSION / "seal").write_text(archive_key)
 (ACCESSION / "ch3_flag").write_text(flags[2])
 (ACCESSION / "ch4_flag").write_text(flags[3])
+(ACCESSION / "ch6_flag").write_text(flags[5])
+
+CATCHER_LOGS = []
+
+
+@app.route("/catcher", methods=["GET", "POST", "OPTIONS"])
+def catcher():
+    if request.method == "OPTIONS":
+        resp = Response("", 204)
+        resp.headers["Access-Control-Allow-Origin"] = "*"
+        resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        resp.headers["Access-Control-Allow-Headers"] = "*"
+        return resp
+
+    data = ""
+    if request.method == "POST":
+        data = request.get_data(as_text=True)
+    elif request.method == "GET":
+        data = request.args.get("data") or request.args.get("exfil") or request.args.get("q") or request.query_string.decode("utf-8", "ignore")
+
+    if data:
+        entry = {
+            "time": time.strftime("%H:%M:%S"),
+            "ip": request.remote_addr,
+            "data": data[:16000]
+        }
+        CATCHER_LOGS.insert(0, entry)
+        if len(CATCHER_LOGS) > 30:
+            CATCHER_LOGS.pop()
+
+    if request.headers.get("Accept", "").startswith("text/html"):
+        return render_template("catcher.html", logs=CATCHER_LOGS)
+
+    resp = Response("OK\n", 200, mimetype="text/plain")
+    resp.headers["Access-Control-Allow-Origin"] = "*"
+    return resp
 
 
 @app.before_request
 def open_session():
-    if request.endpoint in ("health", "static"):
+    if request.endpoint in ("health", "static", "catcher"):
         return
     g.db = connect()
     sid = request.cookies.get("casebook", "")
@@ -146,8 +185,15 @@ def headers(response):
     if "new_id" in g:
         response.set_cookie("casebook", g.new_id, httponly=True, samesite="Strict", max_age=31536000)
     response.headers.update({"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
-                             "Referrer-Policy": "no-referrer",
-                             "Content-Security-Policy": "default-src 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'"})
+                             "Referrer-Policy": "no-referrer"})
+    if request.endpoint == "catcher":
+        response.headers.update({
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*"
+        })
+    else:
+        response.headers["Content-Security-Policy"] = "default-src 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'"
     return response
 
 
@@ -169,6 +215,8 @@ def desk(page=None):
                            messages=messages, hinted=bool(g.player["hints"] & (1 << current)),
                            password=password, archive=f"http://{request.host.split(':')[0]}:8781",
                            trust=f"http://{request.host.split(':')[0]}:8782",
+                           developer=f"http://{request.host.split(':')[0]}:8783",
+                           catcher_logs=CATCHER_LOGS,
                            playable=PLAYABLE, after=aftermath, portraits=portraits, error=request.args.get("result") == "unmatched")
 
 

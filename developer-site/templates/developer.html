@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kunnathu Properties &amp; Infrastructure</title>
+  <link rel="stylesheet" href="/static/developer.css">
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <small>Kunnathu Group · Real Estate &amp; Infra</small>
+      <a class="title" href="/">Kunnathu Properties</a>
+    </div>
+    <nav>
+      <a href="/">Overview</a>
+      <a href="/projects">Township Projects</a>
+      <a href="/contact">Investor Enquiries</a>
+    </nav>
+  </header>
+
+  <main>
+    {% if page == 'home' %}
+      <div class="hero">
+        <small class="tag">Flagship Development</small>
+        <h1>Redefining Modern Living in Central Kerala</h1>
+        <p>With an ancestral legacy rooted in Thrissur, Kunnathu Properties leads premium residential and commercial township ventures across heritage land holdings.</p>
+        <a class="button" href="/projects">View Township Plans <span>→</span></a>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <h3>Heritage Land Holdings</h3>
+          <p>Over 140 acres of contiguous land parcels under clear freehold title, transitioning into prime commercial mixed-use developments.</p>
+        </div>
+        <div class="card">
+          <h3>Statutory Approvals</h3>
+          <p>Full zoning clearance, environmental mitigation, and title certifications secured for phase-one residential towers.</p>
+        </div>
+      </div>
+
+    {% elif page == 'projects' %}
+      <div class="panel">
+        <small class="tag">Master Plan 2026</small>
+        <h1>Nilambur Valley Township &amp; Tech Hub</h1>
+        <p>Spanning 140 acres of prime reclaimed agricultural plains formerly associated with historical endowments in Thrissur district.</p>
+        <hr>
+        <h2>Project Status</h2>
+        <p>Land acquisition and conversion formalities finalized. Ground clearance scheduled post-monsoon. Off-plan reservations opening for high-net-worth investors.</p>
+        <div class="notice-bar">
+          <strong>Private Investor Notice:</strong> Direct enquiries regarding commercial plots or land title dossiers should be submitted via the enquiries desk.
+        </div>
+      </div>
+
+    {% elif page == 'contact' %}
+      <div class="panel">
+        <small class="tag">Executive Desk</small>
+        <h1>Investor &amp; Public Enquiries</h1>
+        <p>Messages submitted below are routed directly to Executive Chairman Devan Kunnathu’s personal administrative desk for review.</p>
+        {% if submitted %}
+          <div class="alert-success">
+            <strong>Enquiry Received.</strong> Your message has been queued for administrative review. An executive assistant will review your submission shortly.
+          </div>
+        {% endif %}
+        <form class="contact-form" method="post" action="/contact">
+          <label for="name">Your Name</label>
+          <input type="text" id="name" name="name" required placeholder="S. Varma" autocomplete="name">
+
+          <label for="email">Email Address</label>
+          <input type="email" id="email" name="email" required placeholder="varma@example.com" autocomplete="email">
+
+          <label for="message">Enquiry Details</label>
+          <textarea id="message" name="message" rows="5" required placeholder="Inquire about plot allocations, title deeds, or private meetings..."></textarea>
+
+          <button type="submit">Submit Enquiry</button>
+        </form>
+      </div>
+
+    {% elif page == 'admin_enquiry' %}
+      <div class="admin-panel">
+        <small class="tag alert">Admin View · Executive Queue</small>
+        <h1>Enquiry #{{ enquiry.id }}</h1>
+        <div class="meta">
+          <span>From: <strong>{{ enquiry.name }}</strong> ({{ enquiry.email }})</span>
+          <span>Received: {{ enquiry.time }}</span>
+        </div>
+        <hr>
+        <div class="enquiry-body">
+          {{ enquiry.message | safe }}
+        </div>
+      </div>
+    {% endif %}
+  </main>
+
+  <footer>
+    <span>Kunnathu Properties &amp; Infrastructure Pvt. Ltd. · Thrissur, Kerala</span>
+    <span>Devan Kunnathu, Managing Director</span>
+  </footer>
+</body>
+</html>

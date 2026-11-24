@@ -47,6 +47,17 @@ services:
     depends_on:
       game:
         condition: service_healthy
+  developer:
+    build:
+      context: .
+      target: developer
+    network_mode: host
+    command: ["gunicorn", "--bind", "127.0.0.1:8783", "--threads", "4", "app:app"]
+    volumes:
+      - accession:/var/lib/accession:ro
+    depends_on:
+      game:
+        condition: service_healthy
 volumes:
   state:
   accession:
