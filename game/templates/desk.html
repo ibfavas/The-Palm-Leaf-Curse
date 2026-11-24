@@ -12,6 +12,7 @@
 {% for p in chapters[page][1] %}<p>{{ p.removeprefix('> ') }}</p>{% endfor %}
 {% if page == 1 %}<a class="button" href="{{ archive }}">Visit the state archives <span>↗</span></a>{% endif %}
 {% if page == 2 %}<p class="catalogue-note">MS-1794-047 · 34 leaves · DO NOT DIGITISE</p><a class="button" href="/attachments/2">First leaf <span>↓ PNG</span></a>{% endif %}
+{% if page == 5 %}<a class="button" href="/attachments/5">Middle leaves <span>↓ TXT</span></a><p><a href="/correspondence/committee-copy">Committee correspondence, 1974</a></p>{% endif %}
 {% if page == current and page in playable %}<form id="entry" method="post" action="/submit/{{ page }}">
 <label for="flag">Submit flag</label><div class="row"><input type="hidden" name="csrf" value="{{ g.player.csrf }}"><input id="flag" name="entry" required autocomplete="off" spellcheck="false"><button>Submit</button></div>{% if error %}<p role="alert">Flag did not match this chapter.</p>{% endif %}</form>
 {% elif page == current and page < 8 %}<p class="notice">This chapter is pending.</p>{% endif %}</section>

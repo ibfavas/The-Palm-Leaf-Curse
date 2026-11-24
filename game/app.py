@@ -11,6 +11,7 @@ from pathlib import Path
 from flask import Flask, abort, g, redirect, render_template, request, send_file, url_for
 
 from files.leaves import first_page
+from files.correspondence import middle_leaves, priest_letter
 
 app = Flask(__name__)
 app.config.update(MAX_CONTENT_LENGTH=4096, TRUSTED_HOSTS=["localhost", "127.0.0.1"])
@@ -30,7 +31,7 @@ for path in sorted((BASE / "story").glob("*.md")):
 HINTS = json.loads(Path(os.environ.get("PALM_HINTS", "/run/private/correspondence.json")).read_text())
 if not isinstance(HINTS, list) or len(HINTS) != 3 or not all(isinstance(h, str) and h.strip() for h in HINTS):
     raise RuntimeError("The private correspondence must contain three replies.")
-PLAYABLE = {1, 2}
+PLAYABLE = {1, 2, 5}
 workspace = tempfile.TemporaryDirectory(prefix="palm-records-")
 downloads = Path(workspace.name)
 sections = re.split(r"^### Chapter [1-7]: ", source, flags=re.M)[1:]
@@ -43,7 +44,10 @@ aftermath = {1: sections[0].split("Then you see the login log.")[1].split("**Fla
              2: sections[1].split("As you read it,")[1].split("**Flag:**")[0].strip()}
 aftermath[1] = "Then you see the login log. " + aftermath[1]
 aftermath[2] = "As you read it, " + aftermath[2]
-attachments = {2: "MS-1794-047-01.png"}
+cipher_key = re.search(r"letter: ([A-Z]+)\.", sections[4])[1]
+(downloads / "middle-leaves.txt").write_text(middle_leaves(quotations(5)[0] + "\n" + flags[4], cipher_key))
+priest_letter(downloads / "committee-copy.png", quotations(4)[0])
+attachments = {2: "MS-1794-047-01.png", 5: "middle-leaves.txt"}
 
 
 def connect():
@@ -115,7 +119,7 @@ def desk(page=None):
     if not 0 <= page <= min(current, 8):
         abort(404)
     password = hmac.new(archive_key.encode(), g.player["id"].encode(), hashlib.sha256).hexdigest()[:16]
-    messages = [(i, hint) for i, hint in enumerate(HINTS, 1) if g.player["hints"] & (1 << i)]
+    messages = [(i, hint) for i, hint in enumerate(HINTS, 1) if current <= 3 and g.player["hints"] & (1 << i)]
     return render_template("desk.html", page=page, current=current, chapters=chapters,
                            messages=messages, hinted=bool(g.player["hints"] & (1 << current)),
                            password=password, archive=f"http://{request.host.split(':')[0]}:8781",
@@ -148,3 +152,10 @@ def attachment(page):
     if page not in attachments or g.player["chapter"] < page:
         abort(404)
     return send_file(downloads / attachments[page], as_attachment=True, conditional=False)
+
+
+@app.get("/correspondence/committee-copy")
+def committee_copy():
+    if g.player["chapter"] < 5:
+        abort(404)
+    return send_file(downloads / "committee-copy.png", as_attachment=True, conditional=False)
