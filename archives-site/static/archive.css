@@ -111,3 +111,17 @@ figcaption {
 b {
   color: #923c2d;
 }
+
+.material {
+  white-space: pre-line;
+}
+
+.error-notice {
+  font-family: ui-monospace, monospace;
+  font-size: 14px;
+  color: #923c2d;
+  background: #fdf3eb;
+  padding: 10px 14px;
+  border-left: 3px solid #923c2d;
+  margin: 16px 0;
+}

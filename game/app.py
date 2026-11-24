@@ -16,23 +16,49 @@ from files.correspondence import middle_leaves, priest_letter
 
 app = Flask(__name__)
 app.config.update(MAX_CONTENT_LENGTH=4096, TRUSTED_HOSTS=["localhost", "127.0.0.1"])
-BASE = Path(__file__).parent
+BASE = Path(__file__).resolve().parent
 STATE = Path(os.environ.get("PALM_STATE", "/var/lib/palm"))
 ACCESSION = Path(os.environ.get("PALM_ACCESSION", "/var/lib/accession"))
 STATE.mkdir(parents=True, exist_ok=True)
 ACCESSION.mkdir(parents=True, exist_ok=True)
-source = Path(os.environ.get("PALM_SOURCE", "/run/private/story.md")).read_text()
+
+def find_story():
+    env = os.environ.get("PALM_SOURCE")
+    if env and Path(env).exists():
+        return Path(env)
+    if Path("/run/private/story.md").exists():
+        return Path("/run/private/story.md")
+    downloads = Path.home() / "Downloads" / "the-palm-leaf-curse-story.md"
+    if downloads.exists():
+        return downloads
+    raise RuntimeError("The private story was not found.")
+
+def find_hints():
+    env = os.environ.get("PALM_HINTS")
+    if env and Path(env).exists():
+        return Path(env)
+    if Path("/run/private/correspondence.json").exists():
+        return Path("/run/private/correspondence.json")
+    downloads = Path.home() / "Downloads" / "the-palm-leaf-curse-correspondence.json"
+    if downloads.exists():
+        return downloads
+    raise RuntimeError("The private correspondence must contain three replies.")
+
+source = find_story().read_text()
 flags = re.findall(r'^\*\*Flag:\*\* `(flag\{[^}]+\})`$', source, re.M)
 if len(flags) != 7 or len(set(flags)) != 7:
     raise RuntimeError("The private story does not contain seven distinct chapter records.")
+
+story_dir = BASE / "story" if (BASE / "story").is_dir() else BASE.parent / "story"
 chapters = []
-for path in sorted((BASE / "story").glob("*.md")):
+for path in sorted(story_dir.glob("*.md")):
     heading, body = path.read_text().strip().split("\n\n", 1)
     chapters.append((heading.split(": ", 1)[1], body.split("\n\n")))
-HINTS = json.loads(Path(os.environ.get("PALM_HINTS", "/run/private/correspondence.json")).read_text())
+
+HINTS = json.loads(find_hints().read_text())
 if not isinstance(HINTS, list) or len(HINTS) != 3 or not all(isinstance(h, str) and h.strip() for h in HINTS):
     raise RuntimeError("The private correspondence must contain three replies.")
-PLAYABLE = {1, 2, 5, 7}
+PLAYABLE = {1, 2, 3, 5, 7}
 workspace = tempfile.TemporaryDirectory(prefix="palm-records-")
 downloads = Path(workspace.name)
 sections = re.split(r"^### Chapter [1-7]: ", source, flags=re.M)[1:]
@@ -41,8 +67,11 @@ def quotations(page):
 
 
 first_page(downloads / "MS-1794-047-01.png", quotations(2)[0] + "\n" + flags[1])
-aftermath = {1: sections[0].split("Then you see the login log.")[1].split("**Flag:**")[0].strip(),
-             2: sections[1].split("As you read it,")[1].split("**Flag:**")[0].strip()}
+aftermath = {
+    1: sections[0].split("Then you see the login log.")[1].split("**Flag:**")[0].strip(),
+    2: sections[1].split("As you read it,")[1].split("**Flag:**")[0].strip(),
+    3: "And there is one field you did not see before. \"Current reader.\" It has your name in it.\n\nThe archive knows you are reading.",
+}
 aftermath[1] = "Then you see the login log. " + aftermath[1]
 aftermath[2] = "As you read it, " + aftermath[2]
 cipher_key = re.search(r"letter: ([A-Z]+)\.", sections[4])[1]
@@ -80,6 +109,7 @@ with connect() as setup:
     archive_key = setup.execute("SELECT value FROM settings WHERE key='archive'").fetchone()[0]
 (ACCESSION / "ledger").write_text(flags[0])
 (ACCESSION / "seal").write_text(archive_key)
+(ACCESSION / "ch3_flag").write_text(flags[2])
 
 
 @app.before_request
@@ -178,4 +208,5 @@ def committee_copy():
 def portrait(name):
     if name not in portraits or g.player["chapter"] < portraits[name][0]:
         abort(404)
-    return send_file(BASE / "portraits" / (name + ".jpg"), conditional=False)
+    portraits_dir = BASE / "portraits" if (BASE / "portraits").is_dir() else BASE.parent / "game" / "portraits"
+    return send_file(portraits_dir / (name + ".jpg"), conditional=False)
