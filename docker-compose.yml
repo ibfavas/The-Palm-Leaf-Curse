@@ -1,0 +1,41 @@
+services:
+  game:
+    build:
+      context: .
+      target: game
+    ports:
+      - "127.0.0.1:8780:8000"
+    volumes:
+      - state:/var/lib/palm
+      - accession:/var/lib/accession
+      - type: bind
+        source: ${PALM_STORY_FILE:-${HOME}/Downloads/the-palm-leaf-curse-story.md}
+        target: /run/private/story.md
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${PALM_HINT_FILE:-${HOME}/Downloads/the-palm-leaf-curse-correspondence.json}
+        target: /run/private/correspondence.json
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+  archive:
+    build:
+      context: .
+      target: archive
+    ports:
+      - "127.0.0.1:8781:8000"
+    volumes:
+      - accession:/var/lib/accession:ro
+    depends_on:
+      game:
+        condition: service_healthy
+volumes:
+  state:
+  accession:

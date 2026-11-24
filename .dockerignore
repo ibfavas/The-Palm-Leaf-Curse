@@ -1,0 +1,11 @@
+**
+!Dockerfile
+!game/
+!game/**
+!archives-site/
+!archives-site/**
+!story/
+!story/**
+!files/
+!files/*.py
+**/__pycache__

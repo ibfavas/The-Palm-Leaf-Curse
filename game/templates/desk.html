@@ -1,0 +1,20 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ chapters[page][0] }} · The Palm-Leaf Curse</title><link rel="stylesheet" href="/static/desk.css">
+<header><a class="wordmark" href="/">The Palm-Leaf Curse</a><span>Thrissur &nbsp; / &nbsp; Monsoon 2026</span></header>
+<main><div class="mast"><div><p class="overline"><i></i> Private investigation journal</p><h1>The Palm-Leaf<br><em>Curse</em></h1></div></div>
+<div class="layout"><aside><h2>Case index</h2><p class="progress">{{ [current - 1, 7]|min }} of 7 chapters solved</p>
+<nav aria-label="Story chapters">{% for title, body in chapters %}{% set n = loop.index0 %}{% if n <= current %}
+<a href="/journal/{{ n }}" {% if page == n %}aria-current="page"{% endif %}><b>{{ '%02d'|format(n) }}</b>{{ title }}{% if n and n < current %}<small aria-label="Solved">✓</small>{% endif %}</a>
+{% else %}<span><b>{{ '%02d'|format(n) }}</b>{{ 'Epilogue' if n == 8 else 'Sealed chapter' }}</span>{% endif %}{% endfor %}</nav></aside>
+<section class="paper"><p class="overline">{{ 'Prologue' if page == 0 else 'Epilogue' if page == 8 else 'Chapter %02d'|format(page) }}</p><h2>{{ chapters[page][0] }}</h2>
+{% if page == 1 %}<details><summary>Prologue · The Call</summary>{% for p in chapters[0][1] %}<p>{{ p }}</p>{% endfor %}</details>{% endif %}
+{% for p in chapters[page][1] %}<p>{{ p.removeprefix('> ') }}</p>{% endfor %}
+{% if page == 1 %}<a class="button" href="{{ archive }}">Visit the state archives <span>↗</span></a>{% endif %}
+{% if page == current and page in playable %}<form id="entry" method="post" action="/submit/{{ page }}">
+<label for="flag">Submit flag</label><div class="row"><input type="hidden" name="csrf" value="{{ g.player.csrf }}"><input id="flag" name="entry" required autocomplete="off" spellcheck="false"><button>Submit</button></div>{% if error %}<p role="alert">Flag did not match this chapter.</p>{% endif %}</form>
+{% elif page == current and page < 8 %}<p class="notice">This chapter is pending.</p>{% endif %}</section>
+<section class="thread" id="thread"><p class="overline">Correspondence</p><h2>Meera Menon</h2>
+<article><small>Meera &nbsp;·&nbsp; 23:00</small><p>Text only. Someone is watching my grandfather's house.</p></article>
+<article><small>Meera &nbsp;·&nbsp; 23:02</small><p>His archive account.</p><code>rmenon<br>{{ password }}</code></article>
+{% for n, msg in messages %}<article><small>Meera &nbsp;·&nbsp; Chapter {{ n }}</small><p>{{ msg }}</p></article>{% endfor %}
+{% if page == current and current <= 3 and not hinted %}<form method="post" action="/message/{{ current }}"><input type="hidden" name="csrf" value="{{ g.player.csrf }}"><button>Message Meera</button></form>{% endif %}</section></div></main></html>
