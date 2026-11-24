@@ -18,4 +18,4 @@ The private source and Docker administration belong to the host operator. A play
 
 ## Build status
 
-Chapter 1 is playable. Later chapters are pending.
+Chapters 1 and 2 are playable. Later chapters are pending.

@@ -8,8 +8,10 @@
 {% else %}<span><b>{{ '%02d'|format(n) }}</b>{{ 'Epilogue' if n == 8 else 'Sealed chapter' }}</span>{% endif %}{% endfor %}</nav></aside>
 <section class="paper"><p class="overline">{{ 'Prologue' if page == 0 else 'Epilogue' if page == 8 else 'Chapter %02d'|format(page) }}</p><h2>{{ chapters[page][0] }}</h2>
 {% if page == 1 %}<details><summary>Prologue · The Call</summary>{% for p in chapters[0][1] %}<p>{{ p }}</p>{% endfor %}</details>{% endif %}
+{% if page == current and page-1 in after %}<div class="previous">{% for p in after[page-1].split('\n\n') %}<p>{{ p }}</p>{% endfor %}</div>{% endif %}
 {% for p in chapters[page][1] %}<p>{{ p.removeprefix('> ') }}</p>{% endfor %}
 {% if page == 1 %}<a class="button" href="{{ archive }}">Visit the state archives <span>↗</span></a>{% endif %}
+{% if page == 2 %}<p class="catalogue-note">MS-1794-047 · 34 leaves · DO NOT DIGITISE</p><a class="button" href="/attachments/2">First leaf <span>↓ PNG</span></a>{% endif %}
 {% if page == current and page in playable %}<form id="entry" method="post" action="/submit/{{ page }}">
 <label for="flag">Submit flag</label><div class="row"><input type="hidden" name="csrf" value="{{ g.player.csrf }}"><input id="flag" name="entry" required autocomplete="off" spellcheck="false"><button>Submit</button></div>{% if error %}<p role="alert">Flag did not match this chapter.</p>{% endif %}</form>
 {% elif page == current and page < 8 %}<p class="notice">This chapter is pending.</p>{% endif %}</section>
