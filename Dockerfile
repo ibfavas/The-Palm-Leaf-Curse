@@ -12,4 +12,3 @@ RUN pip install --no-cache-dir Pillow==12.2.0
 COPY files/*.py files/
 COPY game/ .
 COPY story/ story/
-COPY archives-site/static/raghavan.jpg static/reading-room.jpg

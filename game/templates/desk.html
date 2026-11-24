@@ -16,9 +16,16 @@
 {% if page == 7 %}<a class="button" href="/attachments/7">Professor’s laptop <span>↓ IMG</span></a>{% endif %}
 {% if page == current and page in playable %}<form id="entry" method="post" action="/submit/{{ page }}">
 <label for="flag">Submit flag</label><div class="row"><input type="hidden" name="csrf" value="{{ g.player.csrf }}"><input id="flag" name="entry" required autocomplete="off" spellcheck="false"><button>Submit</button></div>{% if error %}<p role="alert">Flag did not match this chapter.</p>{% endif %}</form>
-{% elif page == current and page < 8 %}<p class="notice">This chapter is pending.</p>{% endif %}</section>
+{% elif page == current and page < 8 %}<p class="notice">This chapter is pending.</p>{% endif %}
+{% for name, record in portraits.items() if name != 'meera' and record[0] == page %}
+<figure><a href="{{ url_for('portrait', name=name) }}"><img loading="lazy" src="{{ url_for('portrait', name=name) }}" alt="{{ record[1] }}"></a><figcaption>{{ record[1] }}</figcaption></figure>
+{% endfor %}</section>
 <section class="thread" id="thread"><p class="overline">Correspondence</p><h2>Meera Menon</h2>
+<a href="/collection/meera.jpg"><img class="contact" src="/collection/meera.jpg" alt="Meera, smiling in the archives courtyard"></a>
 <article><small>Meera &nbsp;·&nbsp; 23:00</small><p>Text only. Someone is watching my grandfather's house.</p></article>
 <article><small>Meera &nbsp;·&nbsp; 23:02</small><p>His archive account.</p><code>rmenon<br>{{ password }}</code></article>
-{% for n, msg in messages %}<article><small>Meera &nbsp;·&nbsp; Chapter {{ n }}</small><p>{{ msg }}</p></article>{% endfor %}
+{% if current >= 4 %}<article><small>Meera &nbsp;·&nbsp; 01:14</small><p>There's a car outside my house. It has been there for an hour. The lights are off.</p></article>{% endif %}
+{% if current >= 5 %}<article><small>Meera</small><p>stop reading.</p></article>{% endif %}
+{% if current == 8 %}<article><small>Meera</small><p>thank you.</p></article>{% endif %}
+{% for n, msg in messages %}<article class="outgoing"><small>You &nbsp;·&nbsp; Chapter {{ n }}</small><p>Meera, are you there?</p></article><article><small>Meera &nbsp;·&nbsp; Chapter {{ n }}</small><p>{{ msg }}</p></article>{% endfor %}
 {% if page == current and current <= 3 and not hinted %}<form method="post" action="/message/{{ current }}"><input type="hidden" name="csrf" value="{{ g.player.csrf }}"><button>Message Meera</button></form>{% endif %}</section></div></main></html>

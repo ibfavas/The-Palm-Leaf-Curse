@@ -17,7 +17,7 @@ def middle_leaves(message, key):
     return "".join(out)
 
 
-def priest_letter(destination, body):
+def priest_letter(destination, body, temple):
     rng = random.Random(1974047)
     size = (860, 1060)
     grain = Image.frombytes("L", size, rng.randbytes(size[0]*size[1]))
@@ -29,7 +29,7 @@ def priest_letter(destination, body):
         for c in line:
             pen.text((x,y+rng.choice([0,0,0,1])),c,font=font,fill=ink)
             x += point*.61
-    type_line(76,88,"VADAKKUMKARA BHAGAVATHY TEMPLE",25)
+    type_line(76,88,temple.upper(),25)
     type_line(77,132,"Private correspondence     /     1974",18)
     pen.line((76,180,778,181),fill=(114,96,74),width=2)
     type_line(76,242,"To the temple committee,",20)

@@ -47,9 +47,19 @@ aftermath[1] = "Then you see the login log. " + aftermath[1]
 aftermath[2] = "As you read it, " + aftermath[2]
 cipher_key = re.search(r"letter: ([A-Z]+)\.", sections[4])[1]
 (downloads / "middle-leaves.txt").write_text(middle_leaves(quotations(5)[0] + "\n" + flags[4], cipher_key))
-priest_letter(downloads / "committee-copy.png", quotations(4)[0])
+temple = re.search(r"accountant of the (.+? temple), 1794", source)[1]
+priest_letter(downloads / "committee-copy.png", quotations(4)[0], temple)
 last_note, last_line = quotations(7)[:2]
 laptop(downloads / "RM-work.img", last_note, last_line, flags[6])
+portraits = {
+    "meera": (1, "Meera Menon in the archives courtyard"),
+    "vasudevan": (4, "Vasudevan Namboothiri, 1974"),
+    "lakshmikutty": (4, "Lakshmikutty Amma, 2009"),
+    "kunjiraman": (6, "Kunjiraman at the manuscript desk, 1794"),
+    "sankaran": (6, "Sankaran Namboothiri at the temple pond, 1794"),
+    "devan": (6, "Devan Kunnathu at the township site"),
+    "window": (7, "Photograph attached to the final email"),
+}
 attachments = {7: "RM-work.img", 2: "MS-1794-047-01.png", 5: "middle-leaves.txt"}
 
 
@@ -126,7 +136,7 @@ def desk(page=None):
     return render_template("desk.html", page=page, current=current, chapters=chapters,
                            messages=messages, hinted=bool(g.player["hints"] & (1 << current)),
                            password=password, archive=f"http://{request.host.split(':')[0]}:8781",
-                           playable=PLAYABLE, after=aftermath, error=request.args.get("result") == "unmatched")
+                           playable=PLAYABLE, after=aftermath, portraits=portraits, error=request.args.get("result") == "unmatched")
 
 
 @app.post("/message/<int:page>")
@@ -162,3 +172,10 @@ def committee_copy():
     if g.player["chapter"] < 5:
         abort(404)
     return send_file(downloads / "committee-copy.png", as_attachment=True, conditional=False)
+
+
+@app.get("/collection/<name>.jpg")
+def portrait(name):
+    if name not in portraits or g.player["chapter"] < portraits[name][0]:
+        abort(404)
+    return send_file(BASE / "portraits" / (name + ".jpg"), conditional=False)
