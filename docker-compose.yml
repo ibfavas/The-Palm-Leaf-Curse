@@ -36,6 +36,17 @@ services:
     depends_on:
       game:
         condition: service_healthy
+  trust:
+    build:
+      context: .
+      target: trust
+    ports:
+      - "127.0.0.1:8782:8000"
+    volumes:
+      - accession:/var/lib/accession:ro
+    depends_on:
+      game:
+        condition: service_healthy
 volumes:
   state:
   accession:

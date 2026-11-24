@@ -10,7 +10,7 @@ From this directory, start with Docker Compose v2 or later.
 docker compose up
 ```
 
-Open [the journal](http://127.0.0.1:8780). Use the same browser profile throughout. The archives open from the journal on port 8781. Both services bind to IPv4 loopback. The first build requires internet access for the base image and Python packages.
+Open [the journal](http://127.0.0.1:8780). Use the same browser profile throughout. The archives open from the journal on port 8781, and the Trust portal on port 8782. Services bind to IPv4 loopback. The first build requires internet access for the base image and Python packages.
 
 Progress persists in a Docker volume across restarts. To stop the game, use `docker compose down`. To erase all players’ progress and start a new installation, use `docker compose down -v`, then `docker compose up`.
 
@@ -18,6 +18,6 @@ The private source and Docker administration belong to the host operator. A play
 
 ## Build status
 
-Chapters 1, 2 and 3 are playable. Chapters 5 and 7, their downloads and the epilogue are implemented behind their respective gates. Chapters 4 and 6 are pending. Normal play stops at chapter 4.
+Chapters 1, 2, 3, 4 and 5 are playable. Chapter 7, its download and the epilogue are implemented behind their respective gates. Chapter 6 is pending. Normal play stops at chapter 6.
 
 The operator can run a spoiler-free gate check against an isolated journal with `docker compose run --rm --no-deps game python check_chapter.py 5`. Use the chapter number you want to check. This checks page access, submission and progress. It prints PASS or FAIL and leaves live progress alone.

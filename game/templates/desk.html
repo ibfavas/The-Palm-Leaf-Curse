@@ -10,7 +10,7 @@
 {% if page == 1 %}<details><summary>Prologue · The Call</summary>{% for p in chapters[0][1] %}<p>{{ p }}</p>{% endfor %}</details>{% endif %}
 {% if page == current and page-1 in after %}<div class="previous">{% for p in after[page-1].split('\n\n') %}<p>{{ p }}</p>{% endfor %}</div>{% endif %}
 {% for p in chapters[page][1] %}<p>{{ p.removeprefix('> ') }}</p>{% endfor %}
-{% if page == 1 %}<a class="button" href="{{ archive }}">Visit the state archives <span>↗</span></a>{% elif page == 3 %}<a class="button" href="{{ archive }}/catalogue">Archive catalogue <span>↗</span></a>{% endif %}
+{% if page == 1 %}<a class="button" href="{{ archive }}">Visit the state archives <span>↗</span></a>{% elif page == 3 %}<a class="button" href="{{ archive }}/catalogue">Archive catalogue <span>↗</span></a>{% elif page == 4 %}<a class="button" href="{{ trust }}">Trust document portal <span>↗</span></a>{% endif %}
 {% if page == 2 %}<p class="catalogue-note">MS-1794-047 · 34 leaves · DO NOT DIGITISE</p><a class="button" href="/attachments/2">First leaf <span>↓ PNG</span></a>{% endif %}
 {% if page == 5 %}<a class="button" href="/attachments/5">Middle leaves <span>↓ TXT</span></a><p><a href="/correspondence/committee-copy">Committee correspondence, 1974</a></p>{% endif %}
 {% if page == 7 %}<a class="button" href="/attachments/7">Professor’s laptop <span>↓ IMG</span></a>{% endif %}

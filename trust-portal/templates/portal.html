@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Document Portal · Kunnathu Charitable Trust</title>
+  <link rel="stylesheet" href="/static/portal.css">
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <small>Kunnathu Charitable Trust</small>
+      <a class="title" href="/document?id=101">Trust Document Repository</a>
+    </div>
+    <nav>
+      <a href="/document?id=101">My Documents</a>
+      <a href="/archive">Archive Vault</a>
+    </nav>
+  </header>
+
+  <main>
+    {% if archive_search %}
+      <div class="panel">
+        <small class="tag">Restricted Access</small>
+        <h1>Historical Archive Search</h1>
+        <p>Authorised trustees and legal representatives may retrieve archived case files by collection reference identifier.</p>
+        <form class="search-box" action="/archive" method="get">
+          <label for="ref">Collection Reference (e.g. TR-YYYY-NNN)</label>
+          <div class="row">
+            <input type="text" id="ref" name="ref" placeholder="TR-1974-047" required autocomplete="off">
+            <button type="submit">Retrieve File</button>
+          </div>
+        </form>
+      </div>
+    {% elif doc %}
+      <div class="viewer">
+        <div class="doc-header">
+          <div class="meta">
+            <span class="badge {{ 'restricted' if 'RESTRICTED' in doc.classification else 'confidential' if 'Confidential' in doc.classification or 'Sensitive' in doc.classification else 'general' }}">
+              {{ doc.classification }}
+            </span>
+            <span class="doc-id">{{ doc.id }}</span>
+            <span class="date">{{ doc.date }}</span>
+          </div>
+          <h1>{{ doc.title }}</h1>
+          <p class="author">Originating entity: <strong>{{ doc.author }}</strong></p>
+        </div>
+
+        <div class="doc-content">
+          <pre>{{ doc.body }}</pre>
+        </div>
+
+        {% if doc.id == 'DOC-101' %}
+        <div class="notice-bar">
+          <small>Document 101 of your assigned docket. To review alternate files, adjust docket index.</small>
+        </div>
+        {% endif %}
+      </div>
+    {% else %}
+      <div class="panel error-box">
+        <small class="tag alert">Docket Error</small>
+        <h1>Document Not Found</h1>
+        <p>No accessible record was found for file reference: <code>{{ requested_id }}</code>.</p>
+        <p>Verify the docket reference or consult the Trust administration.</p>
+        <a class="button" href="/document?id=101">Return to Document #101</a>
+      </div>
+    {% endif %}
+  </main>
+
+  <footer>
+    <span>Kunnathu Charitable Trust &nbsp;·&nbsp; Thrissur, Kerala</span>
+    <span>Internal Network Access Only</span>
+  </footer>
+</body>
+</html>

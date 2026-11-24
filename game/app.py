@@ -58,7 +58,7 @@ for path in sorted(story_dir.glob("*.md")):
 HINTS = json.loads(find_hints().read_text())
 if not isinstance(HINTS, list) or len(HINTS) != 3 or not all(isinstance(h, str) and h.strip() for h in HINTS):
     raise RuntimeError("The private correspondence must contain three replies.")
-PLAYABLE = {1, 2, 3, 5, 7}
+PLAYABLE = {1, 2, 3, 4, 5, 7}
 workspace = tempfile.TemporaryDirectory(prefix="palm-records-")
 downloads = Path(workspace.name)
 sections = re.split(r"^### Chapter [1-7]: ", source, flags=re.M)[1:]
@@ -71,6 +71,7 @@ aftermath = {
     1: sections[0].split("Then you see the login log.")[1].split("**Flag:**")[0].strip(),
     2: sections[1].split("As you read it,")[1].split("**Flag:**")[0].strip(),
     3: "And there is one field you did not see before. \"Current reader.\" It has your name in it.\n\nThe archive knows you are reading.",
+    4: "Three hours after the police find her, your phone lights up. Meera's number. Two words:\n\n\"stop reading.\"\n\nShe is dead. Someone has her phone.",
 }
 aftermath[1] = "Then you see the login log. " + aftermath[1]
 aftermath[2] = "As you read it, " + aftermath[2]
@@ -110,6 +111,7 @@ with connect() as setup:
 (ACCESSION / "ledger").write_text(flags[0])
 (ACCESSION / "seal").write_text(archive_key)
 (ACCESSION / "ch3_flag").write_text(flags[2])
+(ACCESSION / "ch4_flag").write_text(flags[3])
 
 
 @app.before_request
@@ -166,6 +168,7 @@ def desk(page=None):
     return render_template("desk.html", page=page, current=current, chapters=chapters,
                            messages=messages, hinted=bool(g.player["hints"] & (1 << current)),
                            password=password, archive=f"http://{request.host.split(':')[0]}:8781",
+                           trust=f"http://{request.host.split(':')[0]}:8782",
                            playable=PLAYABLE, after=aftermath, portraits=portraits, error=request.args.get("result") == "unmatched")
 
 

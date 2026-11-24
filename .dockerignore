@@ -4,6 +4,10 @@
 !game/**
 !archives-site/
 !archives-site/**
+!trust-portal/
+!trust-portal/**
+!developer-site/
+!developer-site/**
 !story/
 !story/**
 !files/
