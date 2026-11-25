@@ -36,7 +36,7 @@ def scan(leaf_number, rows):
         mid = ((x + end) / 2, y + rng.uniform(-1.5, 1.5))
         color = rng.choice([(126, 95, 55), (151, 117, 73), (108, 78, 48)])
         pen.line([(x, y), mid, (end, y)], fill=color)
-    # A small alphabet of curved stylus strokes, repeated across the ruled leaf.
+    # Reuse a few stylus marks to make each row look hand-etched.
     alphabet = []
     for _ in range(32):
         span = rng.randrange(12, 24)

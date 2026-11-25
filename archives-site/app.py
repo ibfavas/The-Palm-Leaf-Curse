@@ -23,9 +23,10 @@ DB_PATH = Path("/tmp/archives_catalogue.db")
 
 
 def get_ch3_flag():
-    if (accession / "ch3_flag").exists():
+    try:
         return (accession / "ch3_flag").read_text().strip()
-    return os.environ.get("PALM_CH3_FLAG", "")
+    except OSError as error:
+        raise RuntimeError("Chapter data is unavailable.") from error
 
 
 def get_db():
@@ -104,6 +105,9 @@ def init_db():
     conn.close()
 
 
+init_db()
+
+
 @app.after_request
 def headers(response):
     response.headers.update({"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
@@ -119,7 +123,6 @@ def public():
     if request.path != "/catalogue":
         return render_template("archive.html", page=request.path)
 
-    init_db()
     q = request.args.get("q", "").strip()
     error = None
     records = []
@@ -168,7 +171,10 @@ def extract():
     sid = request.cookies.get("casebook")
     if not sid or session.get("reader") != sid:
         abort(403)
-    ledger_text = (accession / "ledger").read_text() if (accession / "ledger").exists() else "\n"
+    try:
+        ledger_text = (accession / "ledger").read_text()
+    except OSError:
+        abort(503)
     return Response("MS-1794-047 | After-hours accession register\n03:12  rmenon\n\n" +
                     ledger_text + "\n", mimetype="text/plain",
                     headers={"Content-Disposition": 'attachment; filename="night-register.txt"'})

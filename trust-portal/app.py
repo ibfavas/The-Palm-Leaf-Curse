@@ -9,10 +9,10 @@ accession = Path(os.environ.get("PALM_ACCESSION", "/var/lib/accession"))
 
 
 def get_flag():
-    flag_file = accession / "ch4_flag"
-    if flag_file.exists():
-        return flag_file.read_text().strip()
-    return os.environ.get("PALM_CH4_FLAG", "")
+    try:
+        return (accession / "ch4_flag").read_text().strip()
+    except OSError:
+        abort(503)
 
 
 @app.after_request

@@ -23,29 +23,19 @@ ACCESSION = Path(os.environ.get("PALM_ACCESSION", "/var/lib/accession"))
 STATE.mkdir(parents=True, exist_ok=True)
 ACCESSION.mkdir(parents=True, exist_ok=True)
 
-def find_story():
-    env = os.environ.get("PALM_SOURCE")
-    if env and Path(env).exists():
-        return Path(env)
-    if Path("/run/private/story.md").exists():
-        return Path("/run/private/story.md")
-    downloads = Path.home() / "Downloads" / "the-palm-leaf-curse-story.md"
-    if downloads.exists():
-        return downloads
-    raise RuntimeError("The private story was not found.")
+def private_input(environment_name, filename, mounted_name):
+    candidates = (
+        os.environ.get(environment_name),
+        f"/run/private/{mounted_name}",
+        Path.home() / "Downloads" / filename,
+    )
+    for candidate in candidates:
+        if candidate and Path(candidate).is_file():
+            return Path(candidate)
+    raise RuntimeError(f"Required private input is missing: {filename}")
 
-def find_hints():
-    env = os.environ.get("PALM_HINTS")
-    if env and Path(env).exists():
-        return Path(env)
-    if Path("/run/private/correspondence.json").exists():
-        return Path("/run/private/correspondence.json")
-    downloads = Path.home() / "Downloads" / "the-palm-leaf-curse-correspondence.json"
-    if downloads.exists():
-        return downloads
-    raise RuntimeError("The private correspondence must contain three replies.")
 
-source = find_story().read_text()
+source = private_input("PALM_SOURCE", "the-palm-leaf-curse-story.md", "story.md").read_text()
 flags = re.findall(r'^\*\*Flag:\*\* `(flag\{[^}]+\})`$', source, re.M)
 if len(flags) != 7 or len(set(flags)) != 7:
     raise RuntimeError("The private story does not contain seven distinct chapter records.")
@@ -56,7 +46,9 @@ for path in sorted(story_dir.glob("*.md")):
     heading, body = path.read_text().strip().split("\n\n", 1)
     chapters.append((heading.split(": ", 1)[1], body.split("\n\n")))
 
-HINTS = json.loads(find_hints().read_text())
+HINTS = json.loads(private_input(
+    "PALM_HINTS", "the-palm-leaf-curse-correspondence.json", "correspondence.json"
+).read_text())
 if not isinstance(HINTS, list) or len(HINTS) != 3 or not all(isinstance(h, str) and h.strip() for h in HINTS):
     raise RuntimeError("The private correspondence must contain three replies.")
 PLAYABLE = {1, 2, 3, 4, 5, 6, 7}

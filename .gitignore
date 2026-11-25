@@ -2,3 +2,9 @@ __pycache__/
 *.pyc
 .env
 .venv/
+*.db
+*.img
+*[Ww]alkthrough*.md
+the-palm-leaf-curse-story.md
+the-palm-leaf-curse-story-v1.md
+the-palm-leaf-curse-correspondence.json

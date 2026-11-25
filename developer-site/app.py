@@ -53,10 +53,10 @@ init_db()
 
 
 def get_flag():
-    flag_file = accession / "ch6_flag"
-    if flag_file.exists():
-        return flag_file.read_text().strip()
-    return os.environ.get("PALM_CH6_FLAG", "")
+    try:
+        return (accession / "ch6_flag").read_text().strip()
+    except OSError:
+        abort(503)
 
 
 def review_enquiry(enquiry_id):
@@ -115,7 +115,6 @@ def contact():
         email = request.form.get("email", "").strip()[:64]
         raw_message = request.form.get("message", "").strip()[:2048]
 
-        # Stage 1 filter: strip <script> tags
         cleaned_message = re.sub(r"(?is)<\s*script[^>]*>.*?<\s*/\s*script\s*>", "", raw_message)
         cleaned_message = re.sub(r"(?i)</?script[^>]*>", "", cleaned_message)
 
