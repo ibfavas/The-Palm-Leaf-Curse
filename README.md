@@ -7,22 +7,8 @@ A seven-chapter, single-player CTF set in a fictional Kerala archive during the 
 ## What you need
 
 - Docker Engine with Docker Compose v2
-- The two private runtime files supplied by the project owner
 
-The playable story script is in `story/`. The game also reads a private source file for flag checks and Meera’s private replies. Keep both runtime files outside this public repository. On the project owner’s machine, Compose finds them here by default:
-
-- `~/Downloads/the-palm-leaf-curse-story.md`
-- `~/Downloads/the-palm-leaf-curse-correspondence.json`
-
-Those files contain material that would spoil the challenges if committed. A fresh clone needs the project owner to provide them. To use different locations, set `PALM_STORY_FILE` and `PALM_HINT_FILE` to their absolute paths before starting Compose.
-
-For example:
-
-```sh
-PALM_STORY_FILE="$HOME/ctf/the-palm-leaf-curse-story.md" \
-PALM_HINT_FILE="$HOME/ctf/the-palm-leaf-curse-correspondence.json" \
-docker compose up
-```
+The story, Meera’s replies, puzzle evidence and encoded flag values are included in the repository. No separate files or environment variables are needed.
 
 ## Start the lab
 
@@ -32,7 +18,7 @@ From the repository directory, run:
 docker compose up
 ```
 
-Compose builds missing images and downloads the required packages on the first run. When the services are ready, open the journal at [http://127.0.0.1:8780](http://127.0.0.1:8780). Keep using the same browser profile throughout the game.
+Compose builds the images and downloads the required packages on the first run. When the services are ready, open the journal at [http://127.0.0.1:8780](http://127.0.0.1:8780). Keep using the same browser profile throughout the game.
 
 | Local site | Address |
 | --- | --- |
@@ -42,6 +28,10 @@ Compose builds missing images and downloads the required packages on the first r
 | Kunnathu Properties | [127.0.0.1:8783](http://127.0.0.1:8783) |
 
 Everything binds to localhost. Nothing needs to be deployed publicly. 🕯️
+
+## About the flags
+
+⚠️ The flag values are stored as Base64 strings. Base64 is an encoding, not encryption; anyone who reads the repository can decode them. This is an intentional tradeoff for a self-contained public lab. Do not reuse these flags as secrets anywhere else.
 
 ## Stop and reset
 
@@ -55,12 +45,12 @@ Your chapter progress survives a normal stop. To erase progress and start fresh,
 
 ```sh
 docker compose down -v
-docker compose up --build
+docker compose up
 ```
 
 ## Check a chapter
 
-The isolated chapter check prints only `PASS` or `FAIL` and does not use the live progress database:
+The isolated chapter check prints only `PASS` or `FAIL`. It checks chapter access, attachment gating and rejection of an incorrect entry without changing the live progress database:
 
 ```sh
 docker compose run --rm --no-deps game python check_chapter.py 6

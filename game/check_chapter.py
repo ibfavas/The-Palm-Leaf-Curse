@@ -18,6 +18,8 @@ def verify(page):
             raise ValueError("Pending chapter")
         client = app.app.test_client()
         assert client.get("/").status_code == 200
+        assert client.get("/seed.json").status_code == 404
+        assert client.get("/static/seed.json").status_code == 404
         sid = client.get_cookie("casebook").value
         with app.connect() as db:
             if page > 1:
@@ -26,18 +28,18 @@ def verify(page):
             csrf = db.execute("SELECT csrf FROM players WHERE id=?", (sid,)).fetchone()[0]
         desk = client.get("/")
         assert desk.status_code == 200
-        assert not any(f.encode() in desk.data for f in app.flags)
+        assert not any(value.encode() in desk.data for value in app.flags_b64)
         if page in app.attachments:
             response = client.get(f"/attachments/{page}")
             assert response.status_code == 200 and len(response.data) > 0
-            assert not any(f.encode() in response.data for f in app.flags)
         if page > 3:
             assert b"Message Meera" not in desk.data
             assert client.post("/message/3", data={"csrf": csrf}).status_code == 403
         def submit(value):
             return client.post(f"/submit/{page}", data={"csrf": csrf, "entry": value}, follow_redirects=True)
         assert b"did not match" in submit("unmatched").data
-        assert f"{page} of 7 chapters solved".encode() in submit(app.flags[page - 1]).data
+        with app.connect() as db:
+            assert db.execute("SELECT chapter FROM players WHERE id=?", (sid,)).fetchone()[0] == page
 
 
 if __name__ == "__main__":

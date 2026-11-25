@@ -1,8 +1,8 @@
+import base64
 import hashlib
 import hmac
 import json
 import os
-import re
 import secrets
 import sqlite3
 import tempfile
@@ -23,22 +23,14 @@ ACCESSION = Path(os.environ.get("PALM_ACCESSION", "/var/lib/accession"))
 STATE.mkdir(parents=True, exist_ok=True)
 ACCESSION.mkdir(parents=True, exist_ok=True)
 
-def private_input(environment_name, filename, mounted_name):
-    candidates = (
-        os.environ.get(environment_name),
-        f"/run/private/{mounted_name}",
-        Path.home() / "Downloads" / filename,
-    )
-    for candidate in candidates:
-        if candidate and Path(candidate).is_file():
-            return Path(candidate)
-    raise RuntimeError(f"Required private input is missing: {filename}")
-
-
-source = private_input("PALM_SOURCE", "the-palm-leaf-curse-story.md", "story.md").read_text()
-flags = re.findall(r'^\*\*Flag:\*\* `(flag\{[^}]+\})`$', source, re.M)
-if len(flags) != 7 or len(set(flags)) != 7:
-    raise RuntimeError("The private story does not contain seven distinct chapter records.")
+SEED = json.loads((BASE / "seed.json").read_text())
+flags_b64 = SEED["flags_b64"]
+if (len(flags_b64) != 7 or len(set(flags_b64)) != 7 or
+        not all(isinstance(value, str) and len(value) % 4 == 0 for value in flags_b64)):
+    raise RuntimeError("The chapter seed is invalid.")
+HINTS = SEED["meera_replies"]
+if not isinstance(HINTS, list) or len(HINTS) != 3 or not all(isinstance(h, str) and h.strip() for h in HINTS):
+    raise RuntimeError("The chapter seed is invalid.")
 
 story_dir = BASE / "story" if (BASE / "story").is_dir() else BASE.parent / "story"
 chapters = []
@@ -46,36 +38,17 @@ for path in sorted(story_dir.glob("*.md")):
     heading, body = path.read_text().strip().split("\n\n", 1)
     chapters.append((heading.split(": ", 1)[1], body.split("\n\n")))
 
-HINTS = json.loads(private_input(
-    "PALM_HINTS", "the-palm-leaf-curse-correspondence.json", "correspondence.json"
-).read_text())
-if not isinstance(HINTS, list) or len(HINTS) != 3 or not all(isinstance(h, str) and h.strip() for h in HINTS):
-    raise RuntimeError("The private correspondence must contain three replies.")
 PLAYABLE = {1, 2, 3, 4, 5, 6, 7}
 workspace = tempfile.TemporaryDirectory(prefix="palm-records-")
 downloads = Path(workspace.name)
-sections = re.split(r"^### Chapter [1-7]: ", source, flags=re.M)[1:]
-def quotations(page):
-    return re.findall(r'^> "(.*?)"$', sections[page - 1], re.M)
-
-
-first_page(downloads / "MS-1794-047-01.png", quotations(2)[0] + "\n" + flags[1])
-aftermath = {
-    1: sections[0].split("Then you see the login log.")[1].split("**Flag:**")[0].strip(),
-    2: sections[1].split("As you read it,")[1].split("**Flag:**")[0].strip(),
-    3: "And there is one field you did not see before. \"Current reader.\" It has your name in it.\n\nThe archive knows you are reading.",
-    4: "Three hours after the police find her, your phone lights up. Meera's number. Two words:\n\n\"stop reading.\"\n\nShe is dead. Someone has her phone.",
-    5: "The same men, the same family, the same trick. Two hundred and thirty years later, and the grandson is doing exactly what the grandfather did.",
-    6: "He has been watching you the whole time. Every chapter, every page, every login. He knew your name before you knew his.\n\nYou look at your window. The rain is still falling. The street is empty. The car with its lights off is gone.",
-}
-aftermath[1] = "Then you see the login log. " + aftermath[1]
-aftermath[2] = "As you read it, " + aftermath[2]
-cipher_key = re.search(r"letter: ([A-Z]+)\.", sections[4])[1]
-(downloads / "middle-leaves.txt").write_text(middle_leaves(quotations(5)[0] + "\n" + flags[4], cipher_key))
-temple = re.search(r"accountant of the (.+? temple), 1794", source)[1]
-priest_letter(downloads / "committee-copy.png", quotations(4)[0], temple)
-last_note, last_line = quotations(7)[:2]
-laptop(downloads / "RM-work.img", last_note, last_line, flags[6])
+evidence = SEED["evidence"]
+first_page(downloads / "MS-1794-047-01.png", evidence["first_leaf_note"] + "\n" + flags_b64[1])
+(downloads / "middle-leaves.txt").write_text(
+    middle_leaves(evidence["confession"] + "\n" + flags_b64[4], SEED["cipher_key"])
+)
+priest_letter(downloads / "committee-copy.png", evidence["priest_letter"], SEED["temple"])
+laptop(downloads / "RM-work.img", evidence["professor_note"], evidence["last_leaf"], flags_b64[6])
+aftermath = {int(chapter): text for chapter, text in SEED["aftermath"].items()}
 portraits = {
     "meera": (1, "Meera Menon in the archives courtyard"),
     "vasudevan": (4, "Vasudevan Namboothiri, 1974"),
@@ -103,11 +76,11 @@ with connect() as setup:
     """)
     setup.execute("INSERT OR IGNORE INTO settings VALUES ('archive', ?)", (secrets.token_hex(32),))
     archive_key = setup.execute("SELECT value FROM settings WHERE key='archive'").fetchone()[0]
-(ACCESSION / "ledger").write_text(flags[0])
+(ACCESSION / "ledger").write_text(flags_b64[0])
 (ACCESSION / "seal").write_text(archive_key)
-(ACCESSION / "ch3_flag").write_text(flags[2])
-(ACCESSION / "ch4_flag").write_text(flags[3])
-(ACCESSION / "ch6_flag").write_text(flags[5])
+(ACCESSION / "ch3_flag").write_text(flags_b64[2])
+(ACCESSION / "ch4_flag").write_text(flags_b64[3])
+(ACCESSION / "ch6_flag").write_text(flags_b64[5])
 
 CATCHER_LOGS = []
 
@@ -226,7 +199,9 @@ def message(page):
 def submit(page):
     if page != g.player["chapter"] or page not in PLAYABLE:
         abort(403)
-    if not secrets.compare_digest(request.form.get("entry", "").strip().encode(), flags[page - 1].encode()):
+    submitted = request.form.get("entry", "").strip().encode()
+    encoded = base64.b64encode(submitted).decode()
+    if not secrets.compare_digest(encoded, flags_b64[page - 1]):
         return redirect(url_for("desk", result="unmatched", _anchor="entry"), 303)
     with g.db:
         g.db.execute("UPDATE players SET chapter=chapter+1 WHERE id=? AND chapter=?", (g.player["id"], page))
