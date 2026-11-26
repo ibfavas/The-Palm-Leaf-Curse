@@ -1,47 +1,53 @@
-# The Palm-Leaf Curse 🌧️
+# The Palm-Leaf Curse
 
 ![A rain-darkened archive and an open palm-leaf manuscript](assets/cover.png)
 
-A seven-chapter, single-player CTF set in a fictional Kerala archive during the 2026 monsoon. Follow the case through a journal and three local websites.
+A seven-chapter, single-player security and forensics CTF set in a fictional Thrissur archive during the 2026 monsoon. You investigate the death of Professor Raghavan Menon and trace manuscript `MS-1794-047` across a case journal, generated forensic artifacts, and three intentionally vulnerable local web services.
 
-## What you need
+## Lab services and scope
+
+Docker Compose starts four Python and Flask containers bound to `127.0.0.1`:
+
+| Service | Address | Role in the case |
+| --- | --- | --- |
+| Case journal | [127.0.0.1:8780](http://127.0.0.1:8780) | Chapter narrative, SQLite progress tracking, evidence downloads, and an HTTP catcher endpoint |
+| State archives | [127.0.0.1:8781](http://127.0.0.1:8781) | Reading-room catalogue search and digitisation portal |
+| Trust documents | [127.0.0.1:8782](http://127.0.0.1:8782) | Endowment and archive document lookup portal |
+| Kunnathu Properties | [127.0.0.1:8783](http://127.0.0.1:8783) | Developer enquiry site with a headless Chromium admin reviewer |
+
+Across the seven chapters, the challenges cover web reconnaissance, LSB steganography on a synthetic palm-leaf scan, SQL injection in SQLite, insecure direct object reference (IDOR), Vigenere cipher decryption, stored XSS with filter bypass against an authenticated headless browser session, and deleted-file recovery from an `ext2` disk image.
+
+## Requirements
 
 - Docker Engine with Docker Compose v2
 
-The story, Meera’s replies, puzzle evidence and encoded flag values are included in the repository. No separate files or environment variables are needed.
+The narrative chapters, hint replies, evidence generators, and encoded flag values all live inside the repository. No separate configuration files or environment variables are needed.
 
 ## Start the lab
 
-From the repository directory, run:
+Run the stack from the repository root:
 
 ```sh
 docker compose up
 ```
 
-Compose builds the images and downloads the required packages on the first run. When the services are ready, open the journal at [http://127.0.0.1:8780](http://127.0.0.1:8780). Keep using the same browser profile throughout the game.
+On the first run, Docker builds the container images and installs Flask, Gunicorn, Pillow, Chromium, and `e2fsprogs`. Once the health check passes, open [http://127.0.0.1:8780](http://127.0.0.1:8780). Keep using the same browser profile so your session cookie stays intact as chapters unlock.
 
-| Local site | Address |
-| --- | --- |
-| Case journal | [127.0.0.1:8780](http://127.0.0.1:8780) |
-| State archives | [127.0.0.1:8781](http://127.0.0.1:8781) |
-| Trust documents | [127.0.0.1:8782](http://127.0.0.1:8782) |
-| Kunnathu Properties | [127.0.0.1:8783](http://127.0.0.1:8783) |
+Everything listens on `127.0.0.1` only. No port is exposed publicly.
 
-Everything binds to localhost. Nothing needs to be deployed publicly. 🕯️
+## Flag storage
 
-## About the flags
-
-⚠️ The flag values are stored as Base64 strings. Base64 is an encoding, not encryption; anyone who reads the repository can decode them. This is an intentional tradeoff for a self-contained public lab. Do not reuse these flags as secrets anywhere else.
+Flag values are stored in the repository as Base64 strings. Because anyone reading the source can decode Base64, treat this strictly as a self-contained local lab and do not reuse those strings as credentials or secrets elsewhere.
 
 ## Stop and reset
 
-Stop the services with `Ctrl+C`, or run:
+Stop the containers with `Ctrl+C` or run:
 
 ```sh
 docker compose down
 ```
 
-Your chapter progress survives a normal stop. To erase progress and start fresh, remove the Compose volumes:
+Your chapter progress is stored in a Docker volume and survives a normal stop. To wipe progress and start from chapter 1, remove the volumes and start again:
 
 ```sh
 docker compose down -v
@@ -50,14 +56,14 @@ docker compose up
 
 ## Check a chapter
 
-The isolated chapter check prints only `PASS` or `FAIL`. It checks chapter access, attachment gating and rejection of an incorrect entry without changing the live progress database:
+`check_chapter.py` runs an isolated smoke test in a temporary directory without touching your live progress database. It checks page access, attachment gating, and rejection of an invalid flag submission, printing `PASS` or `FAIL`:
 
 ```sh
 docker compose run --rm --no-deps game python check_chapter.py 6
 ```
 
-Replace `6` with a chapter number from 1 to 7.
+Replace `6` with any chapter number from `1` to `7`.
 
 ## License
 
-This project is available under the MIT License. See [LICENSE](LICENSE).
+Available under the MIT License. See [LICENSE](LICENSE).
